@@ -1,0 +1,13 @@
+# Ignore executables compiled on Windows
+*.exe
+
+# Ignore executables compiled on Mac/Linux (files with no extension)
+main
+a.out
+
+# Ignore VS Code configuration folders
+.vscode/
+
+# Ignore local swap/temporary files
+*.o
+*.obj
