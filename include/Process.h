@@ -27,9 +27,13 @@ public:
     int get_weight() const;
     double get_vruntime() const;
 
+
     // Setters
     void set_remaining_time(int t);
     void set_vruntime(double vr);
+
+    void execute_one_tick();
+    void update_vruntime(int execution_time);
 };
 
 // Custom Comparator Struct Declaration

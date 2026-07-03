@@ -32,35 +32,47 @@ void Scheduler::check_new_arrivals() {
 }
 
 // The core engine clock loop
-void Scheduler::run_simulation() {
+void Scheduler::run_simulation(){
     std::cout << "Starting Linux CFS Simulator Engine...\n";
     std::cout << "--------------------------------------------\n";
 
-    // Loop continues until BOTH the arrival pool AND the ready queue are completely empty
     while (!arrival_pool.empty() || !ready_queue.empty()) {
         
-        // 1. Check if any new processes have arrived at this clock tick
+        // 1. Check and migrate newly arrived tasks at this clock tick
         check_new_arrivals();
 
-        // 2. Placeholder for CPU execution logic
+        // 2. CPU Execution Step
         if (!ready_queue.empty()) {
-            // For now, we will just print that the queue has tasks
-            std::cout << "[Time " << current_time << "] Processing queue size: " 
-                      << ready_queue.size() << "\n";
+            // EXTRACT: Fetch the process with the absolute lowest vruntime (front of the set)
+            Process current_job = *ready_queue.begin();
+            
+            // ERASE: Remove it from the tree so we can safely update its values
+            ready_queue.erase(ready_queue.begin());
+
+            std::cout << "[Time " << current_time << "] Running Process " << current_job.get_pid() 
+                      << " (vruntime: " << current_job.get_vruntime() 
+                      << ", RemTime: " << current_job.get_remaining_time() << ")\n";
+
+            // MODIFY: Execute the task for 1 time unit and recalculate its virtual runtime
+            current_job.execute_one_tick();
+            current_job.update_vruntime(1); // delta_exec = 1 tick
+
+            // RE-INSERT: If the process still needs execution time, put it back in the RBT
+            if (current_job.get_remaining_time() > 0) {
+                ready_queue.insert(current_job);
+            } else {
+                std::cout << ">>> [Time " << (current_time + 1) << "] Process " 
+                          << current_job.get_pid() << " has finished executing! <<<\n";
+            }
         } else {
             std::cout << "[Time " << current_time << "] CPU Idle. Waiting for tasks...\n";
         }
 
-        // Advance the system clock by 1 tick
+        // Advance system clock
         current_time++;
-
-        // Safety breaker to prevent infinite loops during initial testing
-        if (current_time > 20) {
-            std::cout << "Simulation safety limit reached. Stopping.\n";
-            break;
-        }
+        
+        std::cout << "--------------------------------------------\n";
     }
 
-    std::cout << "--------------------------------------------\n";
     std::cout << "Simulation Finished Successfully!\n";
 }

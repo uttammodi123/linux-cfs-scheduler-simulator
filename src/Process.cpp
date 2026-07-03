@@ -1,4 +1,5 @@
 #include "../include/Process.h"
+#include "Process.h"
 
 // Definition of global weight mapping
 const int NICE_TO_WEIGHT[40] = {
@@ -44,10 +45,6 @@ int Process::get_nice() const {
     return nice; 
 }
 
-int Process::get_weight() const { 
-    return weight; 
-}
-
 double Process::get_vruntime() const { 
     return vruntime; 
 }
@@ -59,6 +56,24 @@ void Process::set_remaining_time(int t){
 
 void Process::set_vruntime(double vr){ 
     vruntime = vr; 
+}
+
+int Process::get_weight() const {
+    // Map nice value (-20 to 19) to array index (0 to 39)
+    int index = nice + 20;
+    return NICE_TO_WEIGHT[index];
+}
+
+void Process::execute_one_tick() {
+    if (remaining_time > 0) {
+        remaining_time--;
+    }
+}
+
+void Process::update_vruntime(int execution_time) {
+    // Linux CFS Formula: vruntime += delta_exec * (NICE_0_WEIGHT / weight)
+    // We use 1024.0 to force floating point division
+    vruntime += execution_time * (1024.0 / get_weight());
 }
 
 // Comparator Operator Definition
