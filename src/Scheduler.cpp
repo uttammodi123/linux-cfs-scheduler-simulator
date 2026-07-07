@@ -7,6 +7,8 @@
 Scheduler::Scheduler() {
     current_time = 0;
     ready_queue_total_weight = 0;
+    last_running_pid = -1;       // -1 means the CPU is currently empty
+    total_context_switches = 0;  // Start the penalty counter at 0
 }
 
 // Add a process to our arrival pool before execution begins
@@ -45,6 +47,52 @@ int Scheduler::calculate_time_slice(const Process& current_proc) const {
     return std::max(1, time_slice);
 }
 
+void Scheduler::print_final_metrics() const {
+    std::cout << "\n========================================================================\n";
+    std::cout << "                 FINAL CFS SIMULATION PERFORMANCE REPORT                \n";
+    std::cout << "========================================================================\n";
+    
+    std::cout << std::left << std::setw(8) << "PID" 
+              << std::setw(15) << "Arrival Time" 
+              << std::setw(12) << "Burst Time" 
+              << std::setw(18) << "Completion Time" 
+              << std::setw(15) << "Turnaround" 
+              << "Waiting Time\n";
+    std::cout << "------------------------------------------------------------------------\n";
+
+    double total_turnaround = 0;
+    double total_waiting = 0;
+
+    for (const auto& p : completed_processes) {
+        int turnaround = p.get_completion_time() - p.get_arrival_time();
+        int waiting = turnaround - p.get_burst_time();
+        
+        total_turnaround += turnaround;
+        total_waiting += waiting;
+
+        std::cout << std::left << std::setw(8) << p.get_pid()
+                  << std::setw(15) << p.get_arrival_time()
+                  << std::setw(12) << p.get_burst_time()
+                  << std::setw(18) << p.get_completion_time()
+                  << std::setw(15) << turnaround
+                  << waiting << "\n";
+    }
+    
+    std::cout << "------------------------------------------------------------------------\n";
+    double avg_turnaround = total_turnaround / completed_processes.size();
+    double avg_waiting = total_waiting / completed_processes.size();
+    double throughput = (double)completed_processes.size() / current_time;
+    double overhead_pct = ((double)total_context_switches / current_time) * 100;
+
+    std::cout << std::fixed << std::setprecision(2);
+    std::cout << "Average Turnaround Time : " << avg_turnaround << " Ticks\n";
+    std::cout << "Average Waiting Time    : " << avg_waiting << " Ticks\n";
+    std::cout << "System Core Throughput  : " << throughput << " processes/tick\n";
+    std::cout << "Total Context Switches  : " << total_context_switches << "\n";
+    std::cout << "CPU Overhead Loss Cost  : " << overhead_pct << "%\n";
+    std::cout << "========================================================================\n";
+}
+
 // The core engine clock loop
 void Scheduler::run_simulation(){
     std::cout << "Starting Linux CFS Simulator Engine...\n";
@@ -63,6 +111,21 @@ void Scheduler::run_simulation(){
             
             // ERASE: Remove it from the tree so we can safely update its values
             ready_queue.erase(ready_queue.begin());
+
+            // ------------------------------------------------------------------------
+            // ADDITION: CONTEXT SWITCH OVERHEAD PENALTY
+            // ------------------------------------------------------------------------
+            if (last_running_pid != -1 && last_running_pid != current_job.get_pid()) {
+                std::cout << "[Time " << current_time << "] [CONTEXT SWITCH OVERHEAD] Swapping PID " 
+                          << last_running_pid << " out -> Loading PID " << current_job.get_pid() << " in.\n";
+                
+                total_context_switches++;
+                current_time++;       // Pay the 1-tick system clock penalty
+                check_new_arrivals(); // Check for arrivals during this overhead tick
+                std::cout << "------------------------------------------------------------------------\n";
+            }
+
+            last_running_pid = current_job.get_pid();
 
             // Calculate its dynamic time slice allocation
             int allocated_slice = calculate_time_slice(current_job);
@@ -97,6 +160,10 @@ void Scheduler::run_simulation(){
 
                 // Check if the process completed its total work early
                 if (current_job.get_remaining_time() == 0) {
+                    current_job.set_completion_time(current_time + 1);
+                    completed_processes.push_back(current_job);
+                    last_running_pid = -1; // Reset since CPU is now empty
+                    
                     std::cout << ">>> [Time " << current_time + 1 << "] Process " 
                               << current_job.get_pid() << " has finished executing! <<<\n";
                     break; // Terminate inner loop early
@@ -115,10 +182,13 @@ void Scheduler::run_simulation(){
             }
         } else {
             std::cout << "[Time " << current_time << "] CPU Idle. Waiting for tasks...\n";
+            last_running_pid = -1;
             current_time++;
             std::cout << "------------------------------------------------------------------------\n";
         }
     }
+
+    print_final_metrics();
 
     std::cout << "Simulation Finished Successfully!\n";
 }

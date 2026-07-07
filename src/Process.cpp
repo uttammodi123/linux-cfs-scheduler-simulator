@@ -22,6 +22,7 @@ Process::Process(int id, int arr, int burst, int n){
     nice = n;
     weight = NICE_TO_WEIGHT[n + 20]; 
     vruntime = 0.0;
+    completion_time = 0;
 }
 
 // Getters Definitions
@@ -31,10 +32,6 @@ int Process::get_pid() const {
 
 int Process::get_arrival_time() const { 
     return arrival_time; 
-}
-
-int Process::get_burst_time() const { 
-    return burst_time; 
 }
 
 int Process::get_remaining_time() const { 
@@ -49,6 +46,14 @@ double Process::get_vruntime() const {
     return vruntime; 
 }
 
+int Process::get_burst_time() const { 
+    return burst_time; 
+}
+
+int Process::get_completion_time() const { 
+    return completion_time; 
+}
+
 // Setters Definitions
 void Process::set_remaining_time(int t){ 
     remaining_time = t; 
@@ -56,6 +61,10 @@ void Process::set_remaining_time(int t){
 
 void Process::set_vruntime(double vr){ 
     vruntime = vr; 
+}
+
+void Process::set_completion_time(int t) { 
+    completion_time = t; 
 }
 
 int Process::get_weight() const {

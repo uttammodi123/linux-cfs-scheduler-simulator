@@ -17,10 +17,16 @@ private:
     // Helper method to move newly arrived processes into the RBT ready queue
     void check_new_arrivals();
 
+    int last_running_pid;                         // Remembers who used the CPU last tick
+    int total_context_switches;                   // Counts total context switch occurrences
+    std::vector<Process> completed_processes;     // Storage container for retired tasks
+
     //Helper to compute dynamic execution window (Delta t)
     int calculate_time_slice(const Process& current_proc) const;
 
     int ready_queue_total_weight; //optimized running weight tracker!
+
+    void print_final_metrics() const;
 
 public:
     // Constructor initializes system clock to 0

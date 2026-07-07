@@ -13,6 +13,7 @@ private:
     int nice;
     int weight;
     double vruntime;
+    int completion_time;
 
 public:
     // Constructor Declaration
@@ -26,11 +27,13 @@ public:
     int get_nice() const;
     int get_weight() const;
     double get_vruntime() const;
+    int get_completion_time() const;
 
 
     // Setters
     void set_remaining_time(int t);
     void set_vruntime(double vr);
+    void set_completion_time(int t);
 
     void execute_one_tick();
     void update_vruntime(int execution_time);
